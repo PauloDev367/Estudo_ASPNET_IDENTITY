@@ -5,10 +5,9 @@ namespace EstudoIdentity.DTO.Response;
 public class UsuarioLoginResponse
 {
     public bool Sucesso { get; set; }
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    
     // Token JWT
-    public string Token { get; private set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string Token { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     // Expiração do token
     public DateTime? DataExpiracao{ get; set; }

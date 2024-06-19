@@ -1,7 +1,10 @@
-﻿using EstudoIdentity.DTO.Request;
+﻿using EstudoIdentity.Configurations;
+using EstudoIdentity.DTO.Request;
 using EstudoIdentity.DTO.Response;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace EstudoIdentity.Services;
 
@@ -41,9 +44,9 @@ public class IdentityService
     public async Task<UsuarioLoginResponse> Login(UsuarioLoginRequest usuarioLogin)
     {
         var result = await _signInManager.PasswordSignInAsync(usuarioLogin.Email, usuarioLogin.Senha, false, true);
-        //if(result.Succeeded)
-        //    return await GerarToken(usuarioLogin.Email);
-    
+        if (result.Succeeded)
+            return await GerarToken(usuarioLogin.Email);
+
         var usuarioLoginResponse = new UsuarioLoginResponse(result.Succeeded);
         if (!result.Succeeded)
         {
@@ -57,5 +60,47 @@ public class IdentityService
                 usuarioLoginResponse.AdicionarErro("Usuário ou senha inválidos");
         }
         return usuarioLoginResponse;
+    }
+
+    private async Task<UsuarioLoginResponse> GerarToken(string email)
+    {
+        var user = await _userManager.FindByEmailAsync(email);
+        var tokenClaims = await ObterClaims(user);
+
+        var dataExpiracao = DateTime.Now.AddSeconds(_jwtOptions.Expiration);
+
+        var jwt = new JwtSecurityToken(
+            issuer: _jwtOptions.Issuer,
+            audience: _jwtOptions.Audience,
+            claims: tokenClaims,
+            notBefore: DateTime.Now,
+            expires: dataExpiracao,
+            signingCredentials: _jwtOptions.SigningCredentials
+        );
+        var token = new JwtSecurityTokenHandler().WriteToken(jwt);
+
+        return new UsuarioLoginResponse
+        {
+            Sucesso = true,
+            Token = token,
+            DataExpiracao = dataExpiracao
+        };
+    }
+
+    private async Task<IList<Claim>> ObterClaims(IdentityUser user)
+    {
+        var claims = await _userManager.GetClaimsAsync(user);
+        var roles = await _userManager.GetRolesAsync(user);
+
+        claims.Add(new Claim(JwtRegisteredClaimNames.Sub, user.Id));
+        claims.Add(new Claim(JwtRegisteredClaimNames.Email, user.Email));
+        claims.Add(new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()));
+        claims.Add(new Claim(JwtRegisteredClaimNames.Nbf, DateTime.Now.ToString()));
+        claims.Add(new Claim(JwtRegisteredClaimNames.Iat, DateTime.Now.ToString()));
+
+        foreach (var role in roles)
+            claims.Add(new Claim("role", role));
+
+        return claims;
     }
 }
