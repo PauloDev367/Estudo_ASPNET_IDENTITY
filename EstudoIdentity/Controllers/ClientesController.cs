@@ -1,6 +1,8 @@
-﻿using EstudoIdentity.Constants;
+﻿using EstudoIdentity.Attributes;
+using EstudoIdentity.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace EstudoIdentity.Controllers;
 
@@ -37,5 +39,18 @@ public class ClientesController : ControllerBase
         clientes.Add("Souza");
 
         return Ok(clientes);
+    }
+
+    /**
+        Para autenticação por claims, primeiro devemos inserir a claim na coluna AspNetUserClaims
+        Por padrão, não existe uma anotação para trabalhar com claims, mas a solução adotada pela 
+        comunidade é criar um atributo nosso para trabalhar com Claims, para facilitar na hora de colocar 
+        nos métodos
+     */
+    [ClaimsAuthorize(Constants.ClaimTypes.Produto, "Ler")]
+    [HttpGet("claim")]
+    public IActionResult claimRota()
+    {
+        return Ok(new { name = "ABACATE" });
     }
 }

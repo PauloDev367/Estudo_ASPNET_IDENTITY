@@ -62,7 +62,6 @@ var tokenValidationParameters = new TokenValidationParameters
 
 };
 
-// para dizer para o aspnet q ele deve usar autenticação
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
